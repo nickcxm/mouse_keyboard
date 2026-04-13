@@ -1,0 +1,26 @@
+"status.tooltip" = "键盘控制鼠标";
+
+"menu.enable" = "开启";
+"menu.disable" = "关闭";
+"menu.speed" = "速度";
+"menu.invert_scroll" = "反转 J/K 滚动";
+"menu.launch_at_login" = "开机启动";
+"menu.launch_at_login_compat" = "开机启动（需 macOS 13+）";
+"menu.open_permissions" = "打开权限设置";
+"menu.quit" = "退出";
+
+"speed.slow" = "慢";
+"speed.normal" = "中";
+"speed.fast" = "快";
+
+"hud.mode_on" = "控制模式已开启";
+"hud.mode_off" = "控制模式已关闭";
+"hud.display_not_available" = "第 %d 块显示器不存在";
+
+"alert.permission_title" = "需要辅助功能权限";
+"alert.permission_message" = "请打开 系统设置 > 隐私与安全性 > 辅助功能 并允许此应用。如果仍无法拦截按键，请同时开启 输入监控。";
+"alert.launch_login_failed_title" = "更新开机启动失败";
+"alert.launch_login_failed_message" = "如果你当前从 Xcode 调试目录运行，请先安装或归档应用后再试。";
+
+"common.ok" = "好";
+"common.later" = "稍后";

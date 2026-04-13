@@ -1,0 +1,26 @@
+"status.tooltip" = "Keyboard Mouse Controller";
+
+"menu.enable" = "Enable";
+"menu.disable" = "Disable";
+"menu.speed" = "Speed";
+"menu.invert_scroll" = "Invert J/K Scroll";
+"menu.launch_at_login" = "Launch at Login";
+"menu.launch_at_login_compat" = "Launch at Login (macOS 13+)";
+"menu.open_permissions" = "Open Permissions";
+"menu.quit" = "Quit";
+
+"speed.slow" = "Slow";
+"speed.normal" = "Normal";
+"speed.fast" = "Fast";
+
+"hud.mode_on" = "Control Mode On";
+"hud.mode_off" = "Control Mode Off";
+"hud.display_not_available" = "Display %d not available";
+
+"alert.permission_title" = "Need Accessibility Permission";
+"alert.permission_message" = "Open System Settings > Privacy & Security > Accessibility and enable this app. If key interception still fails, also enable Input Monitoring.";
+"alert.launch_login_failed_title" = "Failed to Update Launch at Login";
+"alert.launch_login_failed_message" = "If you're running from Xcode debug path, install or archive the app first and try again.";
+
+"common.ok" = "OK";
+"common.later" = "Later";
