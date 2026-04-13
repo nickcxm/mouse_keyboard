@@ -51,6 +51,7 @@ final class KeyboardMouseController {
 
     private enum Config {
         static let syntheticMouseIgnoreSeconds: CFTimeInterval = 0.12
+        static let mouseExitThrottleSeconds: CFTimeInterval = 0.03
     }
 
     var onModeChanged: ((Bool) -> Void)?
@@ -87,6 +88,8 @@ final class KeyboardMouseController {
     private let movementEngine: MouseMovementEngine
 
     private var ignoreMouseMovementUntil: CFTimeInterval = 0
+    private var lastMouseExitCheckTimestamp: CFTimeInterval = 0
+    private var cachedCursorPosition: CGPoint?
 
     init(
         permissionManager: PermissionManager,
@@ -120,13 +123,22 @@ final class KeyboardMouseController {
             return false
         }
 
+        return installEventTap(includeMouseEvents: isControlModeEnabled)
+    }
+
+    private func installEventTap(includeMouseEvents: Bool) -> Bool {
+        eventTapService.stop()
+
         let keyDownMask = (1 as CGEventMask) << CGEventType.keyDown.rawValue
         let keyUpMask = (1 as CGEventMask) << CGEventType.keyUp.rawValue
-        let mouseMovedMask = (1 as CGEventMask) << CGEventType.mouseMoved.rawValue
-        let leftDraggedMask = (1 as CGEventMask) << CGEventType.leftMouseDragged.rawValue
-        let rightDraggedMask = (1 as CGEventMask) << CGEventType.rightMouseDragged.rawValue
-        let otherDraggedMask = (1 as CGEventMask) << CGEventType.otherMouseDragged.rawValue
-        let events: CGEventMask = keyDownMask | keyUpMask | mouseMovedMask | leftDraggedMask | rightDraggedMask | otherDraggedMask
+        var events: CGEventMask = keyDownMask | keyUpMask
+        if includeMouseEvents {
+            let mouseMovedMask = (1 as CGEventMask) << CGEventType.mouseMoved.rawValue
+            let leftDraggedMask = (1 as CGEventMask) << CGEventType.leftMouseDragged.rawValue
+            let rightDraggedMask = (1 as CGEventMask) << CGEventType.rightMouseDragged.rawValue
+            let otherDraggedMask = (1 as CGEventMask) << CGEventType.otherMouseDragged.rawValue
+            events |= (mouseMovedMask | leftDraggedMask | rightDraggedMask | otherDraggedMask)
+        }
 
         return eventTapService.start(eventsOfInterest: events) { [weak self] type, event in
             guard let self else {
@@ -148,6 +160,11 @@ final class KeyboardMouseController {
         isControlModeEnabled = enabled
         if !enabled {
             movementEngine.stopAndReset()
+        }
+        // Reduce event overhead when idle: only keep keyboard events outside control mode.
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            _ = self.installEventTap(includeMouseEvents: self.isControlModeEnabled)
         }
     }
 
@@ -174,6 +191,7 @@ final class KeyboardMouseController {
             return handleKeyUp(keyCode, originalEvent: event)
 
         case .mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged:
+            cachedCursorPosition = event.location
             if shouldAutoExitFromMouseMovement() {
                 setControlModeEnabled(false)
             }
@@ -272,13 +290,15 @@ final class KeyboardMouseController {
         }
 
         let now = CACurrentMediaTime()
+        if now - lastMouseExitCheckTimestamp < Config.mouseExitThrottleSeconds {
+            return false
+        }
+        lastMouseExitCheckTimestamp = now
         return now > ignoreMouseMovementUntil
     }
 
     func moveMouse(dx: CGFloat, dy: CGFloat) {
-        guard let current = CGEvent(source: nil)?.location else {
-            return
-        }
+        let current = currentCursorPosition()
 
         let bounds = combinedDisplayBounds()
         var targetX = current.x + dx
@@ -288,7 +308,9 @@ final class KeyboardMouseController {
         targetY = min(max(targetY, bounds.minY), bounds.maxY - 1)
 
         markSyntheticMouseActivity()
-        CGWarpMouseCursorPosition(CGPoint(x: targetX, y: targetY))
+        let target = CGPoint(x: targetX, y: targetY)
+        cachedCursorPosition = target
+        CGWarpMouseCursorPosition(target)
     }
 
     func rightClick() {
@@ -329,9 +351,7 @@ final class KeyboardMouseController {
     }
 
     private func moveToDisplaySlot(_ slot: Int) {
-        guard let currentLocation = CGEvent(source: nil)?.location else {
-            return
-        }
+        let currentLocation = currentCursorPosition()
 
         let orderedDisplays = orderedDisplayBounds()
         let index = slot - 1
@@ -343,6 +363,7 @@ final class KeyboardMouseController {
         let targetDisplay = orderedDisplays[index]
         let target = CGPoint(x: targetDisplay.midX, y: targetDisplay.midY)
         markSyntheticMouseActivity()
+        cachedCursorPosition = target
         CGWarpMouseCursorPosition(target)
 
         // Keep event tap from treating this synthetic jump as external mouse movement.
@@ -352,9 +373,7 @@ final class KeyboardMouseController {
     }
 
     private func click(button: CGMouseButton) {
-        guard let location = CGEvent(source: nil)?.location else {
-            return
-        }
+        let location = currentCursorPosition()
 
         let downType: CGEventType = (button == .left) ? .leftMouseDown : .rightMouseDown
         let upType: CGEventType = (button == .left) ? .leftMouseUp : .rightMouseUp
@@ -372,6 +391,15 @@ final class KeyboardMouseController {
 
     private func markSyntheticMouseActivity() {
         ignoreMouseMovementUntil = CACurrentMediaTime() + Config.syntheticMouseIgnoreSeconds
+    }
+
+    private func currentCursorPosition() -> CGPoint {
+        if let cachedCursorPosition {
+            return cachedCursorPosition
+        }
+        let location = CGEvent(source: nil)?.location ?? .zero
+        cachedCursorPosition = location
+        return location
     }
 
     private func currentMovementProfile() -> MouseMovementEngine.Profile {

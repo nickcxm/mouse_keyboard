@@ -21,6 +21,9 @@ final class MouseMovementEngine {
         static let fallbackTickSeconds: CFTimeInterval = 1.0 / 120.0
         static let minimumTickSeconds: CFTimeInterval = 1.0 / 240.0
         static let maximumTickSeconds: CFTimeInterval = 1.0 / 30.0
+        static let normalTargetTickSeconds: CFTimeInterval = 1.0 / 60.0
+        static let boostTargetTickSeconds: CFTimeInterval = 1.0 / 120.0
+        static let fineTuneTargetTickSeconds: CFTimeInterval = 1.0 / 45.0
         static let boostMultiplier: CGFloat = 2.0
         static let fineTuneMultiplier: CGFloat = 0.35
         static let minimumStep: CGFloat = 1
@@ -36,6 +39,7 @@ final class MouseMovementEngine {
     private var displayLink: CVDisplayLink?
     private var lastTickTimestamp: CFTimeInterval = 0
     private var isTickQueued = false
+    private var accumulatedTickSeconds: CFTimeInterval = 0
 
     private var lastMoveTimestamp: CFTimeInterval = 0
     private var acceleratedStep: CGFloat = 0
@@ -96,6 +100,7 @@ final class MouseMovementEngine {
         acceleratedStep = 0
         lastMoveTimestamp = 0
         lastTickTimestamp = 0
+        accumulatedTickSeconds = 0
     }
 
     private func startIfNeeded() {
@@ -123,6 +128,7 @@ final class MouseMovementEngine {
         displayLink = nil
         lastTickTimestamp = 0
         isTickQueued = false
+        accumulatedTickSeconds = 0
     }
 
     private static let displayLinkCallback: CVDisplayLinkOutputCallback = { _, _, _, _, _, userInfo in
@@ -146,13 +152,22 @@ final class MouseMovementEngine {
             isTickQueued = true
 
             let now = CACurrentMediaTime()
-            let tickSeconds: CFTimeInterval
+            let rawDelta: CFTimeInterval
             if lastTickTimestamp > 0 {
-                tickSeconds = min(max(now - lastTickTimestamp, Config.minimumTickSeconds), Config.maximumTickSeconds)
+                rawDelta = now - lastTickTimestamp
             } else {
-                tickSeconds = Config.fallbackTickSeconds
+                rawDelta = Config.fallbackTickSeconds
             }
 
+            let targetTick = desiredTickSeconds()
+            accumulatedTickSeconds += rawDelta
+            guard accumulatedTickSeconds >= targetTick else {
+                isTickQueued = false
+                return
+            }
+
+            let tickSeconds = min(max(accumulatedTickSeconds, Config.minimumTickSeconds), Config.maximumTickSeconds)
+            accumulatedTickSeconds = 0
             lastTickTimestamp = now
             tickMovement(tickSeconds: tickSeconds)
             isTickQueued = false
@@ -205,5 +220,15 @@ final class MouseMovementEngine {
         }
 
         return max(step, Config.minimumStep * intervalScale)
+    }
+
+    private func desiredTickSeconds() -> CFTimeInterval {
+        if isBoostEnabled {
+            return Config.boostTargetTickSeconds
+        }
+        if isFineTuneEnabled {
+            return Config.fineTuneTargetTickSeconds
+        }
+        return Config.normalTargetTickSeconds
     }
 }

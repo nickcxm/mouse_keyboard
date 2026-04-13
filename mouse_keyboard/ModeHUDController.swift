@@ -113,25 +113,6 @@ final class ModeHUDController {
         blurView.autoresizingMask = [.width, .height]
         rootView.addSubview(blurView)
 
-        if let layer = rootView.layer {
-            let fillGradient = CAGradientLayer()
-            fillGradient.frame = rootView.bounds
-            fillGradient.colors = [
-                NSColor.white.withAlphaComponent(0.15).cgColor,
-                NSColor.white.withAlphaComponent(0.04).cgColor,
-                NSColor.black.withAlphaComponent(0.13).cgColor
-            ]
-            fillGradient.startPoint = CGPoint(x: 0.12, y: 1.0)
-            fillGradient.endPoint = CGPoint(x: 0.92, y: 0.0)
-            layer.addSublayer(fillGradient)
-
-            let highlight = CAShapeLayer()
-            highlight.path = CGPath(ellipseIn: CGRect(x: 44, y: Config.size.height - 48, width: 252, height: 58), transform: nil)
-            highlight.fillColor = NSColor.white.withAlphaComponent(0.08).cgColor
-            layer.addSublayer(highlight)
-
-        }
-
         let label = NSTextField(labelWithString: "")
         label.alignment = .center
         label.font = NSFont.systemFont(ofSize: 21, weight: .semibold)
