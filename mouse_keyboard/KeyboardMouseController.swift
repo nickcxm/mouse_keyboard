@@ -49,37 +49,8 @@ final class KeyboardMouseController {
         }
     }
 
-    enum KeyMapping {
-        static let f8: CGKeyCode = 100
-        static let one: CGKeyCode = 18
-        static let two: CGKeyCode = 19
-        static let three: CGKeyCode = 20
-        static let w: CGKeyCode = 13
-        static let a: CGKeyCode = 0
-        static let s: CGKeyCode = 1
-        static let d: CGKeyCode = 2
-        static let i: CGKeyCode = 34
-        static let o: CGKeyCode = 31
-        static let j: CGKeyCode = 38
-        static let k: CGKeyCode = 40
-        static let y: CGKeyCode = 16
-        static let h: CGKeyCode = 4
-        static let minus: CGKeyCode = 27
-        static let equal: CGKeyCode = 24
-        static let leftBracket: CGKeyCode = 33
-        static let rightBracket: CGKeyCode = 30
-        static let escape: CGKeyCode = 53
-    }
-
     private enum Config {
         static let syntheticMouseIgnoreSeconds: CFTimeInterval = 0.12
-    }
-
-    private enum QuickRegion {
-        case topLeft
-        case topRight
-        case bottomLeft
-        case bottomRight
     }
 
     var onModeChanged: ((Bool) -> Void)?
@@ -111,6 +82,7 @@ final class KeyboardMouseController {
     private let permissionManager: PermissionManager
     private let settingsStore: SettingsStore
     private let displayManager: DisplayManager
+    private let keyActionRouter = KeyActionRouter()
     private let eventTapService = EventTapService()
     private let movementEngine: MouseMovementEngine
 
@@ -213,139 +185,84 @@ final class KeyboardMouseController {
     }
 
     private func handleKeyDown(_ keyCode: CGKeyCode, originalEvent: CGEvent) -> Unmanaged<CGEvent>? {
-        if keyCode == KeyMapping.f8 {
-            toggleControlMode()
-            return nil
-        }
+        guard let action = keyActionRouter.keyDownAction(for: keyCode) else {
+            guard isControlModeEnabled else {
+                return Unmanaged.passUnretained(originalEvent)
+            }
 
-        guard isControlModeEnabled else {
+            setControlModeEnabled(false)
             return Unmanaged.passUnretained(originalEvent)
         }
 
-        if keyCode == KeyMapping.escape {
-            setControlModeEnabled(false)
+        switch action {
+        case .toggleMode:
+            toggleControlMode()
+            return nil
+
+        default:
+            guard isControlModeEnabled else {
+                return Unmanaged.passUnretained(originalEvent)
+            }
+            performKeyDownAction(action)
             return nil
         }
-
-        if handleMappedKeyDown(keyCode) {
-            return nil
-        }
-
-        setControlModeEnabled(false)
-        return Unmanaged.passUnretained(originalEvent)
     }
 
     private func handleKeyUp(_ keyCode: CGKeyCode, originalEvent: CGEvent) -> Unmanaged<CGEvent>? {
-        if keyCode == KeyMapping.f8 {
-            return nil
-        }
-
-        guard isControlModeEnabled else {
+        guard let action = keyActionRouter.keyUpAction(for: keyCode) else {
             return Unmanaged.passUnretained(originalEvent)
         }
 
-        if handleMappedKeyUp(keyCode) {
+        switch action {
+        case .consumeGlobal:
+            return nil
+
+        default:
+            guard isControlModeEnabled else {
+                return Unmanaged.passUnretained(originalEvent)
+            }
+            performKeyUpAction(action)
             return nil
         }
-
-        return Unmanaged.passUnretained(originalEvent)
     }
 
-    private func handleMappedKeyDown(_ keyCode: CGKeyCode) -> Bool {
-        switch keyCode {
-        case KeyMapping.w:
-            movementEngine.setDirection(.up, isPressed: true)
-            return true
-        case KeyMapping.s:
-            movementEngine.setDirection(.down, isPressed: true)
-            return true
-        case KeyMapping.a:
-            movementEngine.setDirection(.left, isPressed: true)
-            return true
-        case KeyMapping.d:
-            movementEngine.setDirection(.right, isPressed: true)
-            return true
-
-        case KeyMapping.j:
+    private func performKeyDownAction(_ action: KeyActionRouter.KeyDownAction) {
+        switch action {
+        case .toggleMode:
+            toggleControlMode()
+        case .exitMode:
+            setControlModeEnabled(false)
+        case .startMove(let direction):
+            movementEngine.setDirection(direction, isPressed: true)
+        case .setBoost(let enabled):
+            movementEngine.setBoostEnabled(enabled)
+        case .setFineTune(let enabled):
+            movementEngine.setFineTuneEnabled(enabled)
+        case .scrollDown:
             scroll(lines: isKeyboardScrollInverted ? speed.scrollLines : -speed.scrollLines)
-            return true
-        case KeyMapping.k:
+        case .scrollUp:
             scroll(lines: isKeyboardScrollInverted ? -speed.scrollLines : speed.scrollLines)
-            return true
-
-        case KeyMapping.i:
+        case .leftClick:
             leftClick()
-            return true
-        case KeyMapping.o:
+        case .rightClick:
             rightClick()
-            return true
-
-        case KeyMapping.y:
-            movementEngine.setBoostEnabled(true)
-            return true
-        case KeyMapping.h:
-            movementEngine.setFineTuneEnabled(true)
-            return true
-
-        case KeyMapping.minus:
-            moveToRegion(.topLeft)
-            return true
-        case KeyMapping.equal:
-            moveToRegion(.topRight)
-            return true
-        case KeyMapping.leftBracket:
-            moveToRegion(.bottomLeft)
-            return true
-        case KeyMapping.rightBracket:
-            moveToRegion(.bottomRight)
-            return true
-        case KeyMapping.one:
-            moveToDisplaySlot(1)
-            return true
-        case KeyMapping.two:
-            moveToDisplaySlot(2)
-            return true
-        case KeyMapping.three:
-            moveToDisplaySlot(3)
-            return true
-
-        default:
-            movementEngine.resetState()
-            return false
+        case .quickRegion(let region):
+            moveToRegion(region)
+        case .displaySlot(let slot):
+            moveToDisplaySlot(slot)
         }
     }
 
-    private func handleMappedKeyUp(_ keyCode: CGKeyCode) -> Bool {
-        switch keyCode {
-        case KeyMapping.w:
-            movementEngine.setDirection(.up, isPressed: false)
-            return true
-        case KeyMapping.a:
-            movementEngine.setDirection(.left, isPressed: false)
-            return true
-        case KeyMapping.s:
-            movementEngine.setDirection(.down, isPressed: false)
-            return true
-        case KeyMapping.d:
-            movementEngine.setDirection(.right, isPressed: false)
-            return true
-
-        case KeyMapping.y:
-            movementEngine.setBoostEnabled(false)
-            return true
-        case KeyMapping.h:
-            movementEngine.setFineTuneEnabled(false)
-            return true
-
-        case KeyMapping.j, KeyMapping.k,
-             KeyMapping.minus, KeyMapping.equal,
-             KeyMapping.leftBracket, KeyMapping.rightBracket,
-             KeyMapping.one, KeyMapping.two, KeyMapping.three,
-             KeyMapping.i, KeyMapping.o, KeyMapping.escape:
-            return true
-
-        default:
-            return false
+    private func performKeyUpAction(_ action: KeyActionRouter.KeyUpAction) {
+        switch action {
+        case .consumeGlobal, .consumeInControlMode:
+            break
+        case .stopMove(let direction):
+            movementEngine.setDirection(direction, isPressed: false)
+        case .setBoost(let enabled):
+            movementEngine.setBoostEnabled(enabled)
+        case .setFineTune(let enabled):
+            movementEngine.setFineTuneEnabled(enabled)
         }
     }
 
@@ -389,7 +306,7 @@ final class KeyboardMouseController {
         event.post(tap: .cghidEventTap)
     }
 
-    private func moveToRegion(_ region: QuickRegion) {
+    private func moveToRegion(_ region: KeyActionRouter.QuickRegion) {
         let bounds = currentDisplayBounds()
         guard !bounds.isNull else {
             return
