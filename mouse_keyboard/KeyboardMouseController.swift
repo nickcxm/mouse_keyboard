@@ -167,6 +167,9 @@ final class KeyboardMouseController {
 
     func setControlModeEnabled(_ enabled: Bool) {
         isControlModeEnabled = enabled
+        // Cursor may have moved while event tap ignored mouse events outside control mode.
+        // Clear cache when mode toggles so next move always starts from real cursor location.
+        cachedCursorPosition = nil
         if !enabled {
             hideAppSwitcherOverlay()
             movementEngine.stopAndReset()
