@@ -428,9 +428,9 @@ private struct AppSwitcherCellView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(selected ? Color.appleBlue : (colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.12)), lineWidth: selected ? 1.2 : 1)
         )
-        .scaleEffect(selected ? 1.02 : 1.0)
+        .scaleEffect(selected ? 1.045 : 1.0)
         .shadow(color: selected ? Color.black.opacity(0.22) : .clear, radius: 12, x: 3, y: 5)
-        .animation(.easeOut(duration: 0.18), value: selected)
+        .animation(.spring(response: 0.24, dampingFraction: 0.86), value: selected)
     }
 }
 
