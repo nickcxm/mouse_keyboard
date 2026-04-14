@@ -52,6 +52,13 @@ final class KeyboardMouseController {
     private enum Config {
         static let syntheticMouseIgnoreSeconds: CFTimeInterval = 0.12
         static let mouseExitThrottleSeconds: CFTimeInterval = 0.03
+        static let appActivationCursorDelaySeconds: TimeInterval = 0.12
+        static let minimumWindowEdgeLength: CGFloat = 40
+    }
+
+    private enum MultiWindowCursorPolicy {
+        case doNotMove
+        case firstWindowCenter
     }
 
     var onModeChanged: ((Bool) -> Void)?
@@ -87,6 +94,7 @@ final class KeyboardMouseController {
     private let eventTapService = EventTapService()
     private let movementEngine: MouseMovementEngine
     private let appSwitcherOverlay = AppSwitcherOverlayController()
+    private let multiWindowCursorPolicy: MultiWindowCursorPolicy = .doNotMove
 
     private var ignoreMouseMovementUntil: CFTimeInterval = 0
     private var lastMouseExitCheckTimestamp: CFTimeInterval = 0
@@ -334,8 +342,9 @@ final class KeyboardMouseController {
             appSwitcherOverlay.moveSelection(.up)
             return nil
         case 36, 76, 49: // Return / keypad Enter / Space
-            if appSwitcherOverlay.activateSelection() {
+            if let activatedApp = appSwitcherOverlay.activateSelection() {
                 hideAppSwitcherOverlay()
+                scheduleCursorMoveAfterAppActivation(for: activatedApp)
             } else if appSwitcherOverlay.hasInputIdentifier {
                 onInfoMessage?(L10n.tr("hud.app_switcher_id_not_found", appSwitcherOverlay.currentInputIdentifier))
             } else {
@@ -351,8 +360,9 @@ final class KeyboardMouseController {
             return nil
         default:
             if let digit = mapDigitFromKeyCode(keyCode) {
-                if appSwitcherOverlay.appendDigit(digit) {
+                if let activatedApp = appSwitcherOverlay.appendDigit(digit) {
                     hideAppSwitcherOverlay()
+                    scheduleCursorMoveAfterAppActivation(for: activatedApp)
                 }
                 return nil
             }
@@ -403,6 +413,85 @@ final class KeyboardMouseController {
 
     private func hideAppSwitcherOverlay() {
         appSwitcherOverlay.hide()
+    }
+
+    private func scheduleCursorMoveAfterAppActivation(for app: NSRunningApplication) {
+        let processIdentifier = app.processIdentifier
+        DispatchQueue.main.asyncAfter(deadline: .now() + Config.appActivationCursorDelaySeconds) { [weak self] in
+            self?.moveCursorForActivatedApp(processIdentifier: processIdentifier)
+        }
+    }
+
+    private func moveCursorForActivatedApp(processIdentifier: pid_t) {
+        let windowBounds = visibleWindowBounds(for: processIdentifier)
+
+        if windowBounds.count == 1, let onlyWindow = windowBounds.first {
+            warpCursor(to: CGPoint(x: onlyWindow.midX, y: onlyWindow.midY))
+            return
+        }
+
+        if windowBounds.count > 1 {
+            switch multiWindowCursorPolicy {
+            case .doNotMove:
+                return
+            case .firstWindowCenter:
+                if let firstWindow = windowBounds.first {
+                    warpCursor(to: CGPoint(x: firstWindow.midX, y: firstWindow.midY))
+                }
+                return
+            }
+        }
+
+        if let fallbackScreen = NSScreen.main {
+            let center = CGPoint(x: fallbackScreen.frame.midX, y: fallbackScreen.frame.midY)
+            warpCursor(to: center)
+        }
+    }
+
+    private func visibleWindowBounds(for processIdentifier: pid_t) -> [CGRect] {
+        let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
+        guard let windowInfoList = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
+            return []
+        }
+
+        return windowInfoList.compactMap { info in
+            guard
+                let ownerPID = info[kCGWindowOwnerPID as String] as? NSNumber,
+                ownerPID.int32Value == processIdentifier
+            else {
+                return nil
+            }
+
+            guard let layer = info[kCGWindowLayer as String] as? NSNumber, layer.intValue == 0 else {
+                return nil
+            }
+
+            if let alpha = info[kCGWindowAlpha as String] as? NSNumber, alpha.doubleValue <= 0.01 {
+                return nil
+            }
+
+            guard
+                let boundsDictionary = info[kCGWindowBounds as String] as? NSDictionary,
+                let bounds = CGRect(dictionaryRepresentation: boundsDictionary),
+                bounds.width >= Config.minimumWindowEdgeLength,
+                bounds.height >= Config.minimumWindowEdgeLength
+            else {
+                return nil
+            }
+
+            return bounds
+        }
+    }
+
+    private func warpCursor(to target: CGPoint) {
+        let bounds = combinedDisplayBounds()
+        let clamped = CGPoint(
+            x: min(max(target.x, bounds.minX), bounds.maxX - 1),
+            y: min(max(target.y, bounds.minY), bounds.maxY - 1)
+        )
+        markSyntheticMouseActivity()
+        cachedCursorPosition = clamped
+        CGWarpMouseCursorPosition(clamped)
     }
 
     private func shouldAutoExitFromMouseMovement() -> Bool {

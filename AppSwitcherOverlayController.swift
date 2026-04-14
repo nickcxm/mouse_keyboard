@@ -142,9 +142,9 @@ final class AppSwitcherOverlayController {
     }
 
     @discardableResult
-    func appendDigit(_ digit: Int) -> Bool {
+    func appendDigit(_ digit: Int) -> NSRunningApplication? {
         guard (0...9).contains(digit) else {
-            return false
+            return nil
         }
 
         typedIdentifier.append(String(digit))
@@ -160,15 +160,15 @@ final class AppSwitcherOverlayController {
         syncViewModel(animated: true)
 
         guard matches.count == 1 else {
-            return false
+            return nil
         }
 
-        let activated = activateItem(at: matches[0])
-        if activated {
+        let activatedApp = activateItem(at: matches[0])
+        if activatedApp != nil {
             typedIdentifier = ""
             syncViewModel(animated: false)
         }
-        return activated
+        return activatedApp
     }
 
     func removeLastDigit() {
@@ -183,25 +183,26 @@ final class AppSwitcherOverlayController {
         syncViewModel(animated: true)
     }
 
-    func activateSelection() -> Bool {
+    func activateSelection() -> NSRunningApplication? {
         guard let targetIndex = resolvedSelectionIndex() else {
-            return false
+            return nil
         }
 
-        let activated = activateItem(at: targetIndex)
-        if activated {
+        let activatedApp = activateItem(at: targetIndex)
+        if activatedApp != nil {
             typedIdentifier = ""
             syncViewModel(animated: false)
         }
-        return activated
+        return activatedApp
     }
 
-    private func activateItem(at index: Int) -> Bool {
+    private func activateItem(at index: Int) -> NSRunningApplication? {
         guard items.indices.contains(index) else {
-            return false
+            return nil
         }
         selectedIndex = index
-        return items[index].app.activate()
+        let app = items[index].app
+        return app.activate() ? app : nil
     }
 
     private func resolvedSelectionIndex() -> Int? {
@@ -323,7 +324,9 @@ final class AppSwitcherOverlayController {
     }
 
     private func targetFrame() -> NSRect {
-        guard let screen = NSScreen.main else {
+        let mouseLocation = NSEvent.mouseLocation
+        let targetScreen = NSScreen.screens.first(where: { $0.frame.contains(mouseLocation) }) ?? NSScreen.main
+        guard let screen = targetScreen else {
             return NSRect(origin: .zero, size: Config.windowSize)
         }
 
