@@ -16,6 +16,13 @@
 "hud.mode_on" = "Control Mode On";
 "hud.mode_off" = "Control Mode Off";
 "hud.display_not_available" = "Display %d not available";
+"hud.app_switcher_no_apps" = "No switchable apps";
+"hud.app_switcher_id_not_found" = "App ID %@ not found";
+
+"app_switcher.title" = "App Switcher";
+"app_switcher.hint" = "Arrow keys: move   Number unique match: activate   Enter: activate   Tab/Esc: close";
+"app_switcher.input" = "Input ID: %@";
+"app_switcher.empty" = "No switchable apps";
 
 "alert.permission_title" = "Need Accessibility Permission";
 "alert.permission_message" = "Open System Settings > Privacy & Security > Accessibility and enable this app. If key interception still fails, also enable Input Monitoring.";

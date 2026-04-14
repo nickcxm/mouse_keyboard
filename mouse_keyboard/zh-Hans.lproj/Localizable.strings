@@ -16,6 +16,13 @@
 "hud.mode_on" = "控制模式已开启";
 "hud.mode_off" = "控制模式已关闭";
 "hud.display_not_available" = "第 %d 块显示器不存在";
+"hud.app_switcher_no_apps" = "没有可切换的应用";
+"hud.app_switcher_id_not_found" = "应用 ID %@ 不存在";
+
+"app_switcher.title" = "应用切换";
+"app_switcher.hint" = "方向键移动   数字唯一命中自动激活   回车激活   Tab/Esc 关闭";
+"app_switcher.input" = "输入 ID: %@";
+"app_switcher.empty" = "没有可切换的应用";
 
 "alert.permission_title" = "需要辅助功能权限";
 "alert.permission_message" = "请打开 系统设置 > 隐私与安全性 > 辅助功能 并允许此应用。如果仍无法拦截按键，请同时开启 输入监控。";

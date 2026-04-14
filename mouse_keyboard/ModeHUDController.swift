@@ -3,17 +3,17 @@ import QuartzCore
 
 final class ModeHUDController {
     private enum Config {
-        static let size = NSSize(width: 340, height: 96)
-        static let topOffset: CGFloat = 118
-        static let cornerRadius: CGFloat = 20
+        static let size = NSSize(width: 420, height: 108)
+        static let topOffset: CGFloat = 96
+        static let cornerRadius: CGFloat = 12
 
-        static let fadeInDuration: TimeInterval = 0.30
+        static let fadeInDuration: TimeInterval = 0.36
         static let fadeOutDuration: TimeInterval = 0.36
-        static let visibleDuration: TimeInterval = 1.0
-        static let enterOffsetY: CGFloat = -8
+        static let visibleDuration: TimeInterval = 1.15
+        static let enterOffsetY: CGFloat = -10
         static let exitOffsetY: CGFloat = 8
 
-        static let textHeight: CGFloat = 30
+        static let textHeight: CGFloat = 46
     }
 
     private var hudWindow: NSWindow?
@@ -59,7 +59,7 @@ final class ModeHUDController {
 
     private func scheduleHide(window: NSWindow, fromFrame: NSRect) {
         let workItem = DispatchWorkItem { [weak self, weak window] in
-            guard let self, let window else {
+            guard self != nil, let window else {
                 return
             }
 
@@ -105,6 +105,11 @@ final class ModeHUDController {
         rootView.wantsLayer = true
         rootView.layer?.cornerRadius = Config.cornerRadius
         rootView.layer?.masksToBounds = true
+        rootView.layer?.backgroundColor = NSColor(calibratedWhite: 0.0, alpha: 0.8).cgColor
+        rootView.layer?.shadowColor = NSColor.black.cgColor
+        rootView.layer?.shadowOpacity = 0.22
+        rootView.layer?.shadowOffset = CGSize(width: 3, height: 5)
+        rootView.layer?.shadowRadius = 30
 
         let blurView = NSVisualEffectView(frame: rootView.bounds)
         blurView.material = .hudWindow
@@ -113,9 +118,21 @@ final class ModeHUDController {
         blurView.autoresizingMask = [.width, .height]
         rootView.addSubview(blurView)
 
+        let borderLayer = CAShapeLayer()
+        borderLayer.path = CGPath(
+            roundedRect: CGRect(origin: .zero, size: Config.size),
+            cornerWidth: Config.cornerRadius,
+            cornerHeight: Config.cornerRadius,
+            transform: nil
+        )
+        borderLayer.strokeColor = NSColor(white: 1.0, alpha: 0.2).cgColor
+        borderLayer.fillColor = NSColor.clear.cgColor
+        borderLayer.lineWidth = 1
+        rootView.layer?.addSublayer(borderLayer)
+
         let label = NSTextField(labelWithString: "")
         label.alignment = .center
-        label.font = NSFont.systemFont(ofSize: 21, weight: .semibold)
+        label.font = NSFont.systemFont(ofSize: 32, weight: .semibold)
         label.lineBreakMode = .byTruncatingTail
         label.maximumNumberOfLines = 1
         label.translatesAutoresizingMaskIntoConstraints = true
@@ -156,7 +173,7 @@ final class ModeHUDController {
     }
 
     private func centeredLabelFrame(in bounds: NSRect) -> NSRect {
-        let width = max(bounds.width - 36, 120)
+        let width = max(bounds.width - 56, 120)
         let x = (bounds.width - width) / 2
         let y = (bounds.height - Config.textHeight) / 2
         return NSRect(x: x, y: y, width: width, height: Config.textHeight)
@@ -179,6 +196,10 @@ private extension NSBezierPath {
                 path.addCurve(to: points[2], control1: points[0], control2: points[1])
             case .closePath:
                 path.closeSubpath()
+            case .cubicCurveTo:
+                path.addCurve(to: points[2], control1: points[0], control2: points[1])
+            case .quadraticCurveTo:
+                path.addQuadCurve(to: points[1], control: points[0])
             @unknown default:
                 break
             }

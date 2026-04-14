@@ -16,57 +16,134 @@ struct ContentView: View {
         .init(keys: "I / O", description: "左键单击 / 右键单击"),
         .init(keys: "-  =  [  ]", description: "定位到当前屏幕四个象限中心"),
         .init(keys: "1 / 2 / 3", description: "跳转到第 1 / 2 / 3 块显示器中心"),
-        .init(keys: "Esc", description: "退出控制模式")
+        .init(keys: "Tab", description: "应用切换模式（方向键选择或数字 ID + 回车）"),
+        .init(keys: "Esc", description: "退出控制模式 / 关闭应用切换")
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        ScrollView {
+            VStack(spacing: 24) {
+                heroSection
+                shortcutsSection
+                permissionSection
+            }
+            .padding(24)
+        }
+        .background(Color.appleLightGray)
+        .frame(minWidth: 860, minHeight: 620)
+    }
+}
+
+private extension ContentView {
+    var heroSection: some View {
+        VStack(spacing: 12) {
             Text("键盘控制鼠标")
-                .font(.title)
-                .bold()
+                .font(.system(size: 56, weight: .semibold))
+                .kerning(-0.28)
+                .lineSpacing(2)
+                .foregroundStyle(Color.white)
 
-            Text("以下快捷键在控制模式下生效：")
-                .font(.headline)
+            Text("F8 一键开启，全局键盘驱动鼠标与滚轮。")
+                .font(.system(size: 21, weight: .regular))
+                .kerning(0.23)
+                .foregroundStyle(Color.white.opacity(0.9))
 
-            VStack(spacing: 0) {
-                HStack(alignment: .center, spacing: 12) {
-                    Text("按键")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(width: 180, alignment: .leading)
-                    Text("中文说明")
-                        .font(.subheadline.weight(.semibold))
+            HStack(spacing: 10) {
+                Text("Learn more >")
+                    .font(.system(size: 14, weight: .regular))
+                    .kerning(-0.22)
+                    .foregroundStyle(Color.appleBrightBlue)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule(style: .continuous)
+                            .stroke(Color.appleBrightBlue, lineWidth: 1)
+                    )
+
+                Text("F8")
+                    .font(.system(size: 17, weight: .regular))
+                    .foregroundStyle(Color.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color.appleBlue)
+                    )
+            }
+            .padding(.top, 8)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 42)
+        .background(Color.black)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    var shortcutsSection: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .center, spacing: 12) {
+                Text("按键")
+                    .font(.system(size: 17, weight: .semibold))
+                    .kerning(-0.37)
+                    .frame(width: 220, alignment: .leading)
+
+                Text("中文说明")
+                    .font(.system(size: 17, weight: .semibold))
+                    .kerning(-0.37)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .foregroundStyle(Color.appleNearBlack)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+            .background(Color.white)
+
+            ForEach(shortcutItems) { item in
+                HStack(alignment: .top, spacing: 12) {
+                    Text(item.keys)
+                        .font(.system(size: 17, weight: .regular, design: .monospaced))
+                        .frame(width: 220, alignment: .leading)
+                        .foregroundStyle(Color.appleNearBlack)
+
+                    Text(item.description)
+                        .font(.system(size: 17, weight: .regular))
+                        .kerning(-0.37)
+                        .foregroundStyle(Color.black.opacity(0.8))
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(Color.primary.opacity(0.06))
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(Color.white)
 
-                ForEach(shortcutItems) { item in
-                    HStack(alignment: .top, spacing: 12) {
-                        Text(item.keys)
-                            .font(.system(.body, design: .monospaced))
-                            .frame(width: 180, alignment: .leading)
-
-                        Text(item.description)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 9)
-                    .background(Color.primary.opacity(0.02))
+                if item.id != shortcutItems.last?.id {
+                    Divider()
+                        .background(Color.black.opacity(0.08))
                 }
             }
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(Color.primary.opacity(0.12), lineWidth: 1)
-            )
-
-            Text("首次运行请授权：系统设置 > 隐私与安全性 > 辅助功能（必要时也开启输入监控）。")
-                .foregroundStyle(.secondary)
         }
-        .padding(24)
-        .frame(minWidth: 760, minHeight: 460)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .shadow(color: .black.opacity(0.12), radius: 14, x: 0, y: 6)
     }
+
+    var permissionSection: some View {
+        HStack(spacing: 10) {
+            Text("首次运行请授权：系统设置 > 隐私与安全性 > 辅助功能（必要时也开启输入监控）。")
+                .font(.system(size: 14, weight: .regular))
+                .kerning(-0.22)
+                .foregroundStyle(Color.black.opacity(0.8))
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+private extension Color {
+    static let appleLightGray = Color(red: 245 / 255, green: 245 / 255, blue: 247 / 255)
+    static let appleNearBlack = Color(red: 29 / 255, green: 29 / 255, blue: 31 / 255)
+    static let appleBlue = Color(red: 0 / 255, green: 113 / 255, blue: 227 / 255)
+    static let appleBrightBlue = Color(red: 41 / 255, green: 151 / 255, blue: 255 / 255)
 }
 
 #Preview {

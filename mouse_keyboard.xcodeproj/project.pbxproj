@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		E0F619A62F8DDC0D003B4329 /* AppSwitcherOverlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0F619A52F8DDC0D003B4329 /* AppSwitcherOverlayController.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		E03718E22F8B93AB00E3DF34 /* mouse_keyboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = mouse_keyboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E0F619A52F8DDC0D003B4329 /* AppSwitcherOverlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSwitcherOverlayController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -34,6 +39,7 @@
 			children = (
 				E03718E42F8B93AB00E3DF34 /* mouse_keyboard */,
 				E03718E32F8B93AB00E3DF34 /* Products */,
+				E0F619A52F8DDC0D003B4329 /* AppSwitcherOverlayController.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -120,6 +126,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E0F619A62F8DDC0D003B4329 /* AppSwitcherOverlayController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

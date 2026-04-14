@@ -86,6 +86,7 @@ final class KeyboardMouseController {
     private let keyActionRouter = KeyActionRouter()
     private let eventTapService = EventTapService()
     private let movementEngine: MouseMovementEngine
+    private let appSwitcherOverlay = AppSwitcherOverlayController()
 
     private var ignoreMouseMovementUntil: CFTimeInterval = 0
     private var lastMouseExitCheckTimestamp: CFTimeInterval = 0
@@ -159,6 +160,7 @@ final class KeyboardMouseController {
     func setControlModeEnabled(_ enabled: Bool) {
         isControlModeEnabled = enabled
         if !enabled {
+            hideAppSwitcherOverlay()
             movementEngine.stopAndReset()
         }
         // Reduce event overhead when idle: only keep keyboard events outside control mode.
@@ -203,6 +205,10 @@ final class KeyboardMouseController {
     }
 
     private func handleKeyDown(_ keyCode: CGKeyCode, originalEvent: CGEvent) -> Unmanaged<CGEvent>? {
+        if isControlModeEnabled, keyCode == 48 || appSwitcherOverlay.isVisible {
+            return handleAppSwitcherKeyDown(keyCode, originalEvent: originalEvent)
+        }
+
         guard let action = keyActionRouter.keyDownAction(for: keyCode) else {
             guard isControlModeEnabled else {
                 return Unmanaged.passUnretained(originalEvent)
@@ -227,6 +233,10 @@ final class KeyboardMouseController {
     }
 
     private func handleKeyUp(_ keyCode: CGKeyCode, originalEvent: CGEvent) -> Unmanaged<CGEvent>? {
+        if appSwitcherOverlay.isVisible || (isControlModeEnabled && keyCode == 48) {
+            return handleAppSwitcherKeyUp(keyCode, originalEvent: originalEvent)
+        }
+
         guard let action = keyActionRouter.keyUpAction(for: keyCode) else {
             return Unmanaged.passUnretained(originalEvent)
         }
@@ -282,6 +292,117 @@ final class KeyboardMouseController {
         case .setFineTune(let enabled):
             movementEngine.setFineTuneEnabled(enabled)
         }
+    }
+
+    private func handleAppSwitcherKeyDown(_ keyCode: CGKeyCode, originalEvent: CGEvent) -> Unmanaged<CGEvent>? {
+        if keyCode == 48 { // Tab
+            if appSwitcherOverlay.isVisible {
+                hideAppSwitcherOverlay()
+            } else {
+                showAppSwitcherOverlay()
+            }
+            return nil
+        }
+
+        guard appSwitcherOverlay.isVisible else {
+            return Unmanaged.passUnretained(originalEvent)
+        }
+
+        switch keyCode {
+        case 123: // Left
+            appSwitcherOverlay.moveSelection(.left)
+            return nil
+        case 124: // Right
+            appSwitcherOverlay.moveSelection(.right)
+            return nil
+        case 125: // Down
+            appSwitcherOverlay.moveSelection(.down)
+            return nil
+        case 126: // Up
+            appSwitcherOverlay.moveSelection(.up)
+            return nil
+        case 0: // A
+            appSwitcherOverlay.moveSelection(.left)
+            return nil
+        case 2: // D
+            appSwitcherOverlay.moveSelection(.right)
+            return nil
+        case 1: // S
+            appSwitcherOverlay.moveSelection(.down)
+            return nil
+        case 13: // W
+            appSwitcherOverlay.moveSelection(.up)
+            return nil
+        case 36, 76, 49: // Return / keypad Enter / Space
+            if appSwitcherOverlay.activateSelection() {
+                hideAppSwitcherOverlay()
+            } else if appSwitcherOverlay.hasInputIdentifier {
+                onInfoMessage?(L10n.tr("hud.app_switcher_id_not_found", appSwitcherOverlay.currentInputIdentifier))
+            } else {
+                onInfoMessage?(L10n.tr("hud.app_switcher_no_apps"))
+                hideAppSwitcherOverlay()
+            }
+            return nil
+        case 53: // Esc
+            hideAppSwitcherOverlay()
+            return nil
+        case 51: // Delete / backspace
+            appSwitcherOverlay.removeLastDigit()
+            return nil
+        default:
+            if let digit = mapDigitFromKeyCode(keyCode) {
+                if appSwitcherOverlay.appendDigit(digit) {
+                    hideAppSwitcherOverlay()
+                }
+                return nil
+            }
+            // Tab mode: non-selection keys should behave as a normal keyboard.
+            return Unmanaged.passUnretained(originalEvent)
+        }
+    }
+
+    private func handleAppSwitcherKeyUp(_ keyCode: CGKeyCode, originalEvent: CGEvent) -> Unmanaged<CGEvent>? {
+        if isAppSwitcherConsumedKey(keyCode) {
+            return nil
+        }
+        return Unmanaged.passUnretained(originalEvent)
+    }
+
+    private func isAppSwitcherConsumedKey(_ keyCode: CGKeyCode) -> Bool {
+        switch keyCode {
+        case 48, 53, 36, 76, 49, 51, 123, 124, 125, 126, 0, 1, 2, 13:
+            return true
+        default:
+            return mapDigitFromKeyCode(keyCode) != nil
+        }
+    }
+
+    private func mapDigitFromKeyCode(_ keyCode: CGKeyCode) -> Int? {
+        switch keyCode {
+        case 29: return 0
+        case 18: return 1
+        case 19: return 2
+        case 20: return 3
+        case 21: return 4
+        case 23: return 5
+        case 22: return 6
+        case 26: return 7
+        case 28: return 8
+        case 25: return 9
+        default: return nil
+        }
+    }
+
+    private func showAppSwitcherOverlay() {
+        movementEngine.stopAndReset()
+        guard appSwitcherOverlay.show() else {
+            onInfoMessage?(L10n.tr("hud.app_switcher_no_apps"))
+            return
+        }
+    }
+
+    private func hideAppSwitcherOverlay() {
+        appSwitcherOverlay.hide()
     }
 
     private func shouldAutoExitFromMouseMovement() -> Bool {
