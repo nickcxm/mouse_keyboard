@@ -5,7 +5,7 @@ enum L10n {
         NSLocalizedString(key, comment: "")
     }
 
-    static func tr(_ key: String, _ value: CVarArg) -> String {
-        String(format: tr(key), value)
+    static func tr(_ key: String, _ values: CVarArg...) -> String {
+        String(format: tr(key), arguments: values)
     }
 }

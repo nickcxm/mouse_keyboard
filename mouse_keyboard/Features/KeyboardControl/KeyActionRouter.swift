@@ -57,7 +57,7 @@ final class KeyActionRouter {
 
     func keyUpAction(for keyCode: CGKeyCode) -> KeyUpAction? {
         switch keyCode {
-        case 100: return .consumeGlobal                       // F8
+        case 100, 119: return .consumeGlobal                  // F8 / End
         case 13: return .stopMove(.up)                        // W
         case 1: return .stopMove(.down)                       // S
         case 0: return .stopMove(.left)                       // A

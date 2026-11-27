@@ -1,4 +1,5 @@
 "status.tooltip" = "Keyboard Mouse Controller";
+"app.name" = "Mouse Keyboard";
 
 "menu.enable" = "Enable";
 "menu.disable" = "Disable";
@@ -18,6 +19,31 @@
 "hud.display_not_available" = "Display %d not available";
 "hud.app_switcher_no_apps" = "No switchable apps";
 "hud.app_switcher_id_not_found" = "App ID %@ not found";
+"hud.display_move_no_window" = "No movable window in the current app";
+"hud.display_move_succeeded" = "Window moved to display %d";
+"hud.display_move_failed" = "Could not move the window to display %d";
+"display_move.title" = "%@ · Window Actions";
+"display_move.hint" = "Press a display number · Esc or End to cancel";
+"display_move.current" = "Current display";
+"display_move.unknown_app" = "Current App";
+"display_move.display_accessibility" = "Display %d, %@";
+"tile.shortcut_arrange" = "PgDn  Arrange Windows";
+"tile.shortcut_restore" = "PgUp  Maximize All";
+"tile.all_maximized" = "All windows maximized";
+"tile.global_maximize_hint" = "PageUp: enlarge / next window · PageDown: restore";
+"tile.maximized" = "Window maximized · PageDown to restore";
+"tile.unmaximized" = "Previous window size restored";
+"tile.maximize_failed" = "Could not resize the window. Try again with PageUp / PageDown.";
+"tile.no_maximize_history" = "This window has no previous size to restore";
+"tile.browse_restore_failed" = "Could not restore the previous window; browsing paused.";
+"tile.busy" = "Arranging windows…";
+"tile.no_windows" = "No resizable windows on the current desktop";
+"tile.no_history" = "No saved arrangement for this app";
+"tile.done" = "Arranged %d windows · Skipped %d";
+"tile.restored" = "Restored %d windows · %d pending";
+"tile.failed" = "Windows do not fit. Previous positions restored.";
+"tile.rollback_failed" = "Arrangement failed. Press End → PgUp to maximize all windows.";
+"tile.display_changed" = "Displays changed. Press End to select again.";
 
 "app_switcher.title" = "App Switcher";
 "app_switcher.hint" = "Arrow keys: move   Number unique match: activate   Enter: activate   Tab/Esc: close";
@@ -31,3 +57,5 @@
 
 "common.ok" = "OK";
 "common.later" = "Later";
+
+"common.cancel" = "Cancel";

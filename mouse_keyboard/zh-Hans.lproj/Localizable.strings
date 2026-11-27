@@ -1,4 +1,5 @@
 "status.tooltip" = "键盘控制鼠标";
+"app.name" = "窗口工作台";
 
 "menu.enable" = "开启";
 "menu.disable" = "关闭";
@@ -18,6 +19,31 @@
 "hud.display_not_available" = "第 %d 块显示器不存在";
 "hud.app_switcher_no_apps" = "没有可切换的应用";
 "hud.app_switcher_id_not_found" = "应用 ID %@ 不存在";
+"hud.display_move_no_window" = "当前应用没有可移动的窗口";
+"hud.display_move_succeeded" = "窗口已移动到第 %d 块显示器";
+"hud.display_move_failed" = "无法将窗口移动到第 %d 块显示器";
+"display_move.title" = "%@ · 窗口操作";
+"display_move.hint" = "按显示器编号选择 · Esc 或 End 取消";
+"display_move.current" = "当前显示器";
+"display_move.unknown_app" = "当前应用";
+"display_move.display_accessibility" = "第 %d 块显示器，%@";
+"tile.shortcut_arrange" = "PgDn  整理窗口";
+"tile.shortcut_restore" = "PgUp  全部最大化";
+"tile.all_maximized" = "所有窗口已最大化";
+"tile.global_maximize_hint" = "PageUp 放大 / 下一个窗口 · PageDown 恢复";
+"tile.maximized" = "窗口已最大化 · PageDown 缩回";
+"tile.unmaximized" = "已恢复窗口原来的位置和大小";
+"tile.maximize_failed" = "无法调整窗口，可用 PageUp / PageDown 重试";
+"tile.no_maximize_history" = "当前窗口没有最大化前的恢复记录";
+"tile.browse_restore_failed" = "上一窗口未能恢复，已暂停轮巡";
+"tile.busy" = "正在调整窗口…";
+"tile.no_windows" = "当前桌面没有可调整大小的窗口";
+"tile.no_history" = "当前应用没有可恢复的排列";
+"tile.done" = "已整理 %d 个窗口 · 跳过 %d 个";
+"tile.restored" = "已恢复 %d 个窗口 · 剩余 %d 个";
+"tile.failed" = "窗口无法平铺，已还原操作前的位置";
+"tile.rollback_failed" = "整理未完成，可按 End → PgUp 全部最大化";
+"tile.display_changed" = "显示器配置已改变，请重新按 End 选择";
 
 "app_switcher.title" = "应用切换";
 "app_switcher.hint" = "方向键移动   数字唯一命中自动激活   回车激活   Tab/Esc 关闭";
@@ -31,3 +57,5 @@
 
 "common.ok" = "好";
 "common.later" = "稍后";
+
+"common.cancel" = "取消";

@@ -7,15 +7,25 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E0F619A62F8DDC0D003B4329 /* AppSwitcherOverlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0F619A52F8DDC0D003B4329 /* AppSwitcherOverlayController.swift */; };
+        C33000000000000000000002 = {isa = PBXBuildFile; fileRef = C33000000000000000000001; };
+		A11000000000000000000004 /* mouse_keyboard/Features/WindowLayout/Services/WindowTileGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000000000000000000003 /* mouse_keyboard/Features/WindowLayout/Services/WindowTileGeometry.swift */; };
+		B22000000000000000000002 /* mouse_keyboard/Features/WindowLayout/Models/WindowBrowseCycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22000000000000000000001 /* mouse_keyboard/Features/WindowLayout/Models/WindowBrowseCycle.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        C33000000000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = mouse_keyboard/Features/WindowLayout/Models/WindowBrowseTransition.swift; sourceTree = SOURCE_ROOT; };
+		A11000000000000000000001 /* WindowLayoutTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = WindowLayoutTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A11000000000000000000003 /* mouse_keyboard/Features/WindowLayout/Services/WindowTileGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = mouse_keyboard/Features/WindowLayout/Services/WindowTileGeometry.swift; sourceTree = SOURCE_ROOT; };
+		B22000000000000000000001 /* mouse_keyboard/Features/WindowLayout/Models/WindowBrowseCycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = mouse_keyboard/Features/WindowLayout/Models/WindowBrowseCycle.swift; sourceTree = SOURCE_ROOT; };
 		E03718E22F8B93AB00E3DF34 /* mouse_keyboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = mouse_keyboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		E0F619A52F8DDC0D003B4329 /* AppSwitcherOverlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSwitcherOverlayController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		A11000000000000000000002 /* WindowLayoutTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WindowLayoutTests;
+			sourceTree = "<group>";
+		};
 		E03718E42F8B93AB00E3DF34 /* mouse_keyboard */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = mouse_keyboard;
@@ -24,6 +34,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		A11000000000000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E03718DF2F8B93AB00E3DF34 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -34,12 +51,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		E021E17430514E4C001E54D8 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				A11000000000000000000003 /* mouse_keyboard/Features/WindowLayout/Services/WindowTileGeometry.swift */,
+				B22000000000000000000001 /* mouse_keyboard/Features/WindowLayout/Models/WindowBrowseCycle.swift */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		E03718D92F8B93AB00E3DF34 = {
 			isa = PBXGroup;
 			children = (
 				E03718E42F8B93AB00E3DF34 /* mouse_keyboard */,
+				A11000000000000000000002 /* WindowLayoutTests */,
 				E03718E32F8B93AB00E3DF34 /* Products */,
-				E0F619A52F8DDC0D003B4329 /* AppSwitcherOverlayController.swift */,
+				E021E17430514E4C001E54D8 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -47,6 +74,7 @@
 			isa = PBXGroup;
 			children = (
 				E03718E22F8B93AB00E3DF34 /* mouse_keyboard.app */,
+				A11000000000000000000001 /* WindowLayoutTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -54,6 +82,25 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		A11000000000000000000007 /* WindowLayoutTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A11000000000000000000008 /* Build configuration list for PBXNativeTarget "WindowLayoutTests" */;
+			buildPhases = (
+				A11000000000000000000005 /* Sources */,
+				A11000000000000000000006 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A11000000000000000000002 /* WindowLayoutTests */,
+			);
+			name = WindowLayoutTests;
+			productName = WindowLayoutTests;
+			productReference = A11000000000000000000001 /* WindowLayoutTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		E03718E12F8B93AB00E3DF34 /* mouse_keyboard */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = E03718ED2F8B93AD00E3DF34 /* Build configuration list for PBXNativeTarget "mouse_keyboard" */;
@@ -107,6 +154,7 @@
 			projectRoot = "";
 			targets = (
 				E03718E12F8B93AB00E3DF34 /* mouse_keyboard */,
+				A11000000000000000000007 /* WindowLayoutTests */,
 			);
 		};
 /* End PBXProject section */
@@ -122,17 +170,48 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		A11000000000000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A11000000000000000000004 /* mouse_keyboard/Features/WindowLayout/Services/WindowTileGeometry.swift in Sources */,
+				B22000000000000000000002 /* mouse_keyboard/Features/WindowLayout/Models/WindowBrowseCycle.swift in Sources */,
+                C33000000000000000000002,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E03718DE2F8B93AB00E3DF34 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E0F619A62F8DDC0D003B4329 /* AppSwitcherOverlayController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		A11000000000000000000009 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.neptuno.mouse-keyboard.layout-tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A1100000000000000000000A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.neptuno.mouse-keyboard.layout-tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 		E03718EB2F8B93AD00E3DF34 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -262,7 +341,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8HT5AZW47B;
-				ENABLE_APP_SANDBOX = YES;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
@@ -294,7 +373,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8HT5AZW47B;
-				ENABLE_APP_SANDBOX = YES;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
@@ -320,6 +399,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		A11000000000000000000008 /* Build configuration list for PBXNativeTarget "WindowLayoutTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A11000000000000000000009 /* Debug */,
+				A1100000000000000000000A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		E03718DD2F8B93AB00E3DF34 /* Build configuration list for PBXProject "mouse_keyboard" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

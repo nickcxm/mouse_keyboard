@@ -1,10 +1,11 @@
 import AppKit
 import ServiceManagement
+import os
 
 final class StatusBarController: NSObject {
     private let keyboardController: KeyboardMouseController
     private let permissionManager: PermissionManager
-    private let modeHUD = ModeHUDController()
+    private let logger = Logger(subsystem: "com.neptuno.mouse-keyboard", category: "StatusBar")
 
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let menu = NSMenu()
@@ -72,18 +73,14 @@ final class StatusBarController: NSObject {
     }
 
     private func bindControllerState() {
-        keyboardController.onModeChanged = { [weak self] isEnabled in
+        keyboardController.onModeChanged = { [weak self] _ in
             self?.refreshMenuState()
-            self?.modeHUD.show(message: isEnabled ? L10n.tr("hud.mode_on") : L10n.tr("hud.mode_off"), enabled: isEnabled)
         }
         keyboardController.onSpeedChanged = { [weak self] _ in
             self?.refreshMenuState()
         }
         keyboardController.onScrollDirectionChanged = { [weak self] _ in
             self?.refreshMenuState()
-        }
-        keyboardController.onInfoMessage = { [weak self] message in
-            self?.modeHUD.show(message: message, enabled: false)
         }
     }
 
@@ -142,7 +139,7 @@ final class StatusBarController: NSObject {
                 try SMAppService.mainApp.register()
             }
         } catch {
-            showLaunchAtLoginError(error)
+            logger.error("Could not change launch at login: \(error.localizedDescription)")
         }
 
         updateLaunchAtLoginItem()
@@ -159,15 +156,6 @@ final class StatusBarController: NSObject {
         launchAtLoginItem.title = L10n.tr("menu.launch_at_login")
         launchAtLoginItem.isEnabled = true
         launchAtLoginItem.state = (SMAppService.mainApp.status == .enabled) ? .on : .off
-    }
-
-    private func showLaunchAtLoginError(_ error: Error) {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = L10n.tr("alert.launch_login_failed_title")
-        alert.informativeText = "\(error.localizedDescription)\n\n\(L10n.tr("alert.launch_login_failed_message"))"
-        alert.addButton(withTitle: L10n.tr("common.ok"))
-        alert.runModal()
     }
 
     @objc

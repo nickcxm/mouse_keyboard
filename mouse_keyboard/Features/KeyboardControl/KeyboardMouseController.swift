@@ -63,7 +63,6 @@ final class KeyboardMouseController {
 
     var onModeChanged: ((Bool) -> Void)?
     var onSpeedChanged: ((SpeedPreset) -> Void)?
-    var onInfoMessage: ((String) -> Void)?
     var onScrollDirectionChanged: ((Bool) -> Void)?
 
     private(set) var isControlModeEnabled = false {
@@ -94,11 +93,19 @@ final class KeyboardMouseController {
     private let eventTapService = EventTapService()
     private let movementEngine: MouseMovementEngine
     private let appSwitcherOverlay = AppSwitcherOverlayController()
+    private let windowDisplayMoveService = WindowDisplayMoveService()
+    private let windowDisplayMoveOverlay = WindowDisplayMoveOverlayController()
+    private let applicationWindowTiler = ApplicationWindowTiler()
+    private var windowArrangementTask: Task<Void, Never>?
+    private var activeBrowseProcessIdentifier: pid_t?
+    private var pendingBrowseRestore = false
+    private var windowActionPressedKeys: Set<CGKeyCode> = []
     private let multiWindowCursorPolicy: MultiWindowCursorPolicy = .doNotMove
 
     private var ignoreMouseMovementUntil: CFTimeInterval = 0
     private var lastMouseExitCheckTimestamp: CFTimeInterval = 0
     private var cachedCursorPosition: CGPoint?
+    private var windowDisplayMoveSession: WindowDisplayMoveSession?
 
     init(
         permissionManager: PermissionManager,
@@ -216,6 +223,31 @@ final class KeyboardMouseController {
     }
 
     private func handleKeyDown(_ keyCode: CGKeyCode, originalEvent: CGEvent) -> Unmanaged<CGEvent>? {
+        // Keep consuming repeats until release even if the operation closed the overlay.
+        if windowActionPressedKeys.contains(keyCode) { return nil }
+        // End's group actions take priority over standalone PageUp/PageDown browsing.
+        if windowDisplayMoveOverlay.isVisible {
+            if isWindowDisplayMoveConsumedKey(keyCode) {
+                windowActionPressedKeys.insert(keyCode)
+            }
+            return handleWindowDisplayMoveKeyDown(keyCode, originalEvent: originalEvent)
+        }
+        if keyCode == 116 || keyCode == 121 { // PageUp / PageDown (HIToolbox Events.h)
+            windowActionPressedKeys.insert(keyCode)
+            if originalEvent.getIntegerValueField(.keyboardEventAutorepeat) == 0 {
+                maximizeApplicationWindow(restore: keyCode == 121)
+            }
+            return nil
+        }
+        if keyCode == 119 { // End
+            windowActionPressedKeys.insert(keyCode)
+            let isRepeat = originalEvent.getIntegerValueField(.keyboardEventAutorepeat) != 0
+            if !isRepeat {
+                showWindowDisplayMoveOverlay()
+            }
+            return nil
+        }
+
         if isControlModeEnabled, keyCode == 48 || appSwitcherOverlay.isVisible {
             return handleAppSwitcherKeyDown(keyCode, originalEvent: originalEvent)
         }
@@ -244,6 +276,11 @@ final class KeyboardMouseController {
     }
 
     private func handleKeyUp(_ keyCode: CGKeyCode, originalEvent: CGEvent) -> Unmanaged<CGEvent>? {
+        if windowActionPressedKeys.remove(keyCode) != nil { return nil }
+        if windowDisplayMoveOverlay.isVisible, isWindowDisplayMoveConsumedKey(keyCode) {
+            return nil
+        }
+
         if appSwitcherOverlay.isVisible || (isControlModeEnabled && keyCode == 48) {
             return handleAppSwitcherKeyUp(keyCode, originalEvent: originalEvent)
         }
@@ -305,6 +342,121 @@ final class KeyboardMouseController {
         }
     }
 
+    private func handleWindowDisplayMoveKeyDown(
+        _ keyCode: CGKeyCode,
+        originalEvent: CGEvent
+    ) -> Unmanaged<CGEvent>? {
+        switch keyCode {
+        case 119: // End
+            let isRepeat = originalEvent.getIntegerValueField(.keyboardEventAutorepeat) != 0
+            if !isRepeat {
+                hideWindowDisplayMoveOverlay()
+            }
+            return nil
+        case 53: // Esc
+            hideWindowDisplayMoveOverlay()
+            return nil
+        case 121: // PageDown
+            arrangeApplicationWindows(maximizeAll: false)
+            return nil
+        case 116: // PageUp
+            arrangeApplicationWindows(maximizeAll: true)
+            return nil
+        default:
+            guard let displayNumber = mapDigitFromKeyCode(keyCode) else {
+                hideWindowDisplayMoveOverlay()
+                return Unmanaged.passUnretained(originalEvent)
+            }
+            moveFocusedWindow(toDisplayNumber: displayNumber)
+            return nil
+        }
+    }
+
+    private func showWindowDisplayMoveOverlay() {
+        guard windowArrangementTask == nil else {
+            return
+        }
+        hideAppSwitcherOverlay()
+        movementEngine.stopAndReset()
+        guard let session = windowDisplayMoveService.makeSession() else {
+            return
+        }
+        windowDisplayMoveSession = session
+        windowDisplayMoveOverlay.show(session: session)
+    }
+
+    private func hideWindowDisplayMoveOverlay() {
+        windowDisplayMoveOverlay.hide()
+        windowDisplayMoveSession = nil
+    }
+
+    private func arrangeApplicationWindows(maximizeAll: Bool) {
+        guard windowArrangementTask == nil, let session = windowDisplayMoveSession else { return }
+        hideWindowDisplayMoveOverlay()
+        movementEngine.stopAndReset()
+        windowArrangementTask = Task { [weak self] in
+            guard let self else { return }
+            defer { windowArrangementTask = nil }
+            let result = await applicationWindowTiler.perform(
+                maximizeAll: maximizeAll, session: session
+            )
+            if let frame = result.focusedFrame {
+                warpCursor(to: CGPoint(x: frame.midX, y: frame.midY))
+            }
+        }
+    }
+
+    private func moveFocusedWindow(toDisplayNumber number: Int) {
+        guard
+            let session = windowDisplayMoveSession,
+            session.targets.contains(where: { $0.id == number })
+        else {
+            return
+        }
+
+        let movedFrame = windowDisplayMoveService.moveWindow(in: session, toDisplayNumber: number)
+        hideWindowDisplayMoveOverlay()
+        if let movedFrame {
+            warpCursor(to: CGPoint(x: movedFrame.midX, y: movedFrame.midY))
+        }
+    }
+
+    private func maximizeApplicationWindow(restore: Bool) {
+        guard windowArrangementTask == nil else {
+            if restore, activeBrowseProcessIdentifier == NSWorkspace.shared.frontmostApplication?.processIdentifier {
+                pendingBrowseRestore = true
+            }
+            return
+        }
+        guard let session = windowDisplayMoveService.makeSession() else {
+            return
+        }
+        hideWindowDisplayMoveOverlay()
+        hideAppSwitcherOverlay()
+        movementEngine.stopAndReset()
+        activeBrowseProcessIdentifier = session.processIdentifier
+        pendingBrowseRestore = false
+        windowArrangementTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                windowArrangementTask = nil
+                activeBrowseProcessIdentifier = nil
+                pendingBrowseRestore = false
+            }
+            var result = await applicationWindowTiler.setMaximized(
+                restore: restore, session: session,
+                shouldFinishImmediately: { [weak self] in self?.pendingBrowseRestore == true }
+            )
+            if pendingBrowseRestore {
+                pendingBrowseRestore = false
+                result = await applicationWindowTiler.setMaximized(restore: true, session: session)
+            }
+            if let frame = result.focusedFrame {
+                warpCursor(to: CGPoint(x: frame.midX, y: frame.midY))
+            }
+        }
+    }
+
     private func handleAppSwitcherKeyDown(_ keyCode: CGKeyCode, originalEvent: CGEvent) -> Unmanaged<CGEvent>? {
         if keyCode == 48 { // Tab
             if appSwitcherOverlay.isVisible {
@@ -348,10 +500,7 @@ final class KeyboardMouseController {
             if let activatedApp = appSwitcherOverlay.activateSelection() {
                 hideAppSwitcherOverlay()
                 scheduleCursorMoveAfterAppActivation(for: activatedApp)
-            } else if appSwitcherOverlay.hasInputIdentifier {
-                onInfoMessage?(L10n.tr("hud.app_switcher_id_not_found", appSwitcherOverlay.currentInputIdentifier))
-            } else {
-                onInfoMessage?(L10n.tr("hud.app_switcher_no_apps"))
+            } else if !appSwitcherOverlay.hasInputIdentifier {
                 hideAppSwitcherOverlay()
             }
             return nil
@@ -392,24 +541,27 @@ final class KeyboardMouseController {
 
     private func mapDigitFromKeyCode(_ keyCode: CGKeyCode) -> Int? {
         switch keyCode {
-        case 29: return 0
-        case 18: return 1
-        case 19: return 2
-        case 20: return 3
-        case 21: return 4
-        case 23: return 5
-        case 22: return 6
-        case 26: return 7
-        case 28: return 8
-        case 25: return 9
+        case 29, 82: return 0
+        case 18, 83: return 1
+        case 19, 84: return 2
+        case 20, 85: return 3
+        case 21, 86: return 4
+        case 23, 87: return 5
+        case 22, 88: return 6
+        case 26, 89: return 7
+        case 28, 91: return 8
+        case 25, 92: return 9
         default: return nil
         }
+    }
+
+    private func isWindowDisplayMoveConsumedKey(_ keyCode: CGKeyCode) -> Bool {
+        keyCode == 119 || keyCode == 53 || keyCode == 121 || keyCode == 116 || mapDigitFromKeyCode(keyCode) != nil
     }
 
     private func showAppSwitcherOverlay() {
         movementEngine.stopAndReset()
         guard appSwitcherOverlay.show() else {
-            onInfoMessage?(L10n.tr("hud.app_switcher_no_apps"))
             return
         }
     }
@@ -569,7 +721,6 @@ final class KeyboardMouseController {
         let orderedDisplays = orderedDisplayBounds()
         let index = slot - 1
         guard orderedDisplays.indices.contains(index) else {
-            onInfoMessage?(L10n.tr("hud.display_not_available", slot))
             return
         }
 

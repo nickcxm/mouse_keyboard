@@ -6,6 +6,15 @@ final class PermissionManager {
         AXIsProcessTrusted()
     }
 
+    func hasScreenRecordingPermission() -> Bool {
+        CGPreflightScreenCaptureAccess()
+    }
+
+    @discardableResult
+    func requestScreenRecordingIfNeeded() -> Bool {
+        CGRequestScreenCaptureAccess()
+    }
+
     @discardableResult
     func requestAccessibilityIfNeeded() -> Bool {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
