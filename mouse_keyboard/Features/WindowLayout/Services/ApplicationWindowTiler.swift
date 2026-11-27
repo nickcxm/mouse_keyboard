@@ -58,7 +58,9 @@ final class ApplicationWindowTiler {
             axQueue.async { self.geometry.restoreEnhancedUserInterface(wasEnhanced, for: pid) }
         }
 
-        let (eligible, skipped) = await runOnAXQueue { self.eligibleWindows(session: session) }
+        let (eligible, skipped) = await runOnAXQueue {
+            self.eligibleWindows(session: session, onDisplayBounds: target.bounds)
+        }
         guard !eligible.isEmpty else {
             return Result(message: L10n.tr("tile.no_windows"), focusedFrame: nil)
         }
@@ -163,10 +165,14 @@ final class ApplicationWindowTiler {
 
         // Initialize browse session on first PageUp for this app.
         if browseSessions[pid] == nil {
-            let eligible = await runOnAXQueue { self.eligibleWindows(session: session).0 }
             guard let app = NSRunningApplication(processIdentifier: pid), !app.isTerminated,
-                  eligible.contains(where: { CFEqual($0.window, session.window) }),
                   let target = session.targets.first(where: \.containsCurrentWindow) else {
+                return Result(message: L10n.tr("tile.no_windows"), focusedFrame: nil)
+            }
+            let eligible = await runOnAXQueue {
+                self.eligibleWindows(session: session, onDisplayBounds: target.bounds).0
+            }
+            guard eligible.contains(where: { CFEqual($0.window, session.window) }) else {
                 return Result(message: L10n.tr("tile.no_windows"), focusedFrame: nil)
             }
             browseSessions[pid] = BrowseSession(
@@ -211,7 +217,9 @@ final class ApplicationWindowTiler {
         }
 
         // Step B: Pick the next available window.
-        let eligible = await runOnAXQueue { self.eligibleWindows(session: session).0 }
+        let eligible = await runOnAXQueue {
+            self.eligibleWindows(session: session, onDisplayBounds: browse.displayBounds).0
+        }
         let start = browse.lastIndex.map { ($0 + 1) % browse.windows.count } ?? 0
         var nextIndex: Int?
         for offset in browse.windows.indices {
@@ -304,16 +312,26 @@ final class ApplicationWindowTiler {
 
     private func applyTilingSync(_ requests: [Placement], in bounds: CGRect) -> Bool {
         if allFit(requests, in: bounds) { return true }
-        for _ in 0..<2 {
-            for request in requests {
-                let current = geometry.frame(of: request.window)
-                _ = geometry.prepareAndResize(request.frame, currentFrame: current, in: bounds, on: request.window)
+        for attempt in 0..<2 {
+            if attempt == 0 {
+                for request in requests {
+                    let current = geometry.frame(of: request.window)
+                    _ = geometry.prepareAndResize(request.frame, currentFrame: current, in: bounds, on: request.window)
+                }
+                Thread.sleep(forTimeInterval: 0.18)
+                for request in requests {
+                    _ = geometry.setPoint(request.frame.origin, attribute: kAXPositionAttribute, on: request.window)
+                }
+                Thread.sleep(forTimeInterval: 0.08)
+            } else {
+                for request in requests {
+                    let actual = geometry.frame(of: request.window)
+                    if let actual, WindowTileGeometry.fits(actual, in: request.frame, bounds: bounds) {
+                        continue
+                    }
+                    placeWindowSync(request.window, to: request.frame)
+                }
             }
-            Thread.sleep(forTimeInterval: 0.18)
-            for request in requests {
-                _ = geometry.setPoint(request.frame.origin, attribute: kAXPositionAttribute, on: request.window)
-            }
-            Thread.sleep(forTimeInterval: 0.08)
             if allFit(requests, in: bounds) { return true }
         }
         return false
@@ -341,7 +359,7 @@ final class ApplicationWindowTiler {
 
     // MARK: - Window Discovery & Focus
 
-    private func eligibleWindows(session: WindowDisplayMoveSession) -> ([Placement], Int) {
+    private func eligibleWindows(session: WindowDisplayMoveSession, onDisplayBounds displayBounds: CGRect) -> ([Placement], Int) {
         let all = windows(for: session.processIdentifier)
         let visible = visibleFrames(for: session.processIdentifier)
         var eligible = all.compactMap { window -> Placement? in
@@ -350,6 +368,7 @@ final class ApplicationWindowTiler {
                   geometry.copyAttribute(window, "AXFullScreen") as? Bool != true,
                   let frame = geometry.frame(of: window),
                   visible.contains(where: { WindowTileGeometry.matches($0, frame) }),
+                  CFEqual(window, session.window) || displayBounds.contains(CGPoint(x: frame.midX, y: frame.midY)),
                   isSettable(kAXPositionAttribute, on: window),
                   isSettable(kAXSizeAttribute, on: window) else { return nil }
             return Placement(window: window, frame: frame)

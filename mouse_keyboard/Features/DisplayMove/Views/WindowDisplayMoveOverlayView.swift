@@ -12,7 +12,7 @@ struct WindowDisplayMoveOverlayView: View {
         let info = Bundle.main.infoDictionary
         let version = info?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = info?["CFBundleVersion"] as? String ?? "1"
-        return "v\(version) (\(build) · 20261127-1142)"
+        return "v\(version) (\(build))"
     }
 
     var body: some View {

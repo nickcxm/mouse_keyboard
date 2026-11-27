@@ -9,6 +9,7 @@ final class WindowDisplayMoveService {
     }
 
     private let displayTopology: DisplayTopologyService
+    private let axQueue = DispatchQueue(label: "com.neptuno.mouse-keyboard.ax-move", qos: .userInteractive)
 
     init(displayTopology: DisplayTopologyService = DisplayTopologyService()) {
         self.displayTopology = displayTopology
@@ -64,6 +65,16 @@ final class WindowDisplayMoveService {
             windowFrame: windowFrame,
             targets: targets
         )
+    }
+
+    func moveWindowAsync(in session: WindowDisplayMoveSession, toDisplayNumber number: Int) async -> CGRect? {
+        await withCheckedContinuation { continuation in
+            axQueue.async {
+                let wasEnhanced = self.disableEnhancedUserInterface(for: session.processIdentifier)
+                defer { self.restoreEnhancedUserInterface(wasEnhanced, for: session.processIdentifier) }
+                continuation.resume(returning: self.moveWindow(in: session, toDisplayNumber: number))
+            }
+        }
     }
 
     func moveWindow(in session: WindowDisplayMoveSession, toDisplayNumber number: Int) -> CGRect? {

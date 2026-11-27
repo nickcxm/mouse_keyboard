@@ -408,16 +408,21 @@ final class KeyboardMouseController {
 
     private func moveFocusedWindow(toDisplayNumber number: Int) {
         guard
+            windowArrangementTask == nil,
             let session = windowDisplayMoveSession,
             session.targets.contains(where: { $0.id == number })
         else {
             return
         }
 
-        let movedFrame = windowDisplayMoveService.moveWindow(in: session, toDisplayNumber: number)
         hideWindowDisplayMoveOverlay()
-        if let movedFrame {
-            warpCursor(to: CGPoint(x: movedFrame.midX, y: movedFrame.midY))
+        movementEngine.stopAndReset()
+        windowArrangementTask = Task { [weak self] in
+            guard let self else { return }
+            defer { windowArrangementTask = nil }
+            if let movedFrame = await windowDisplayMoveService.moveWindowAsync(in: session, toDisplayNumber: number) {
+                warpCursor(to: CGPoint(x: movedFrame.midX, y: movedFrame.midY))
+            }
         }
     }
 
